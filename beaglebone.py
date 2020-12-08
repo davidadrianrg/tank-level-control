@@ -1,5 +1,5 @@
 #Importing dependencies
-from smbus2 import SMBus,i2c_msg
+from smbus2 import SMBus as bus,i2c_msg
 import paho.mqtt.client as mqtt
 import yaml
 import os
@@ -40,55 +40,84 @@ client.loop_start
 def on_message(client, userdata, message):
 
     if message.topic == topics_dict["data"]["plant1"]:
-        message.payload = get_data(1)
+        message.payload = get_data(plant1_addr)
         client.publish(message.topic,message.payload)
 
     if message.topic == topics_dict["data"]["plant2"]:
-        message.payload = get_data(2)
+        message.payload = get_data(plant2_addr)
         client.publish(message.topic,message.payload)
 
     if message.topic == topics_dict["params"]["plant1"]:
-        message.payload = get_params(1)
+        message.payload = get_params(plant1_addr)
         client.publish(message.topic,message.payload)
 
     if message.topic == topics_dict["params"]["plant2"]:
-        message.payload = get_params(2)
+        message.payload = get_params(plant2_addr)
         client.publish(message.topic,message.payload)
 
     if message.topic == topics_dict["get_params"]["plant1"] and message.payload == "":
-        message.payload = get_params(1)
+        message.payload = get_params(plant1_addr)
         client.publish(message.topic,message.payload)
 
     if message.topic == topics_dict["get_params"]["plant2"] and message.payload == "":
-        message.payload = get_params(2)
+        message.payload = get_params(plant2_addr)
         client.publish(message.topic,message.payload)
 
     if message.topic == topics_dict["on_off"]["plant1"]:
         if message.payload == "0":
-            control_plant(1,0)
+            control_plant(plant1_addr,0)
         if message.payload == "1":
-            control_plant(1,1)
+            control_plant(plant1_addr,1)
     if message.topic == topics_dict["on_off"]["plant2"]:
         if message.payload == "0":
-            control_plant(2,0)
+            control_plant(plant2_addr,0)
         if message.payload == "1":
-            control_plant(2,1)
+            control_plant(plant2_addr,1)
     if message.topic == topics_dict["update"]["plant1"]:
-        control_plant(1,1,message.payload)
+        control_plant(plant1_addr,1,message.payload)
     if message.topic == topics_dict["update"]["plant2"]:
-        control_plant(2,1,message.payload)
+        control_plant(plant2_addr,1,message.payload)
     
 #Defining internal functions for the callback
-def get_data(plant_number):
-    payload=""
-    return payload
-
-def get_params(plant_number):
+def get_data(plant_address):
+    #Requesting new data from tank control level sensors
+    request = i2c_msg.write(plant_address,"d")
+    msg = i2c_msg.read(plant_address,16)
+    bus.i2c_rdwr(msg,request)
+    #Parsing to string for the mqtt payload
+    msg_list = list(msg)
     payload = ""
+    for msg_unit in msg_list:
+        payload = payload + ";" + str(msg_unit)
     return payload
 
-def control_plant(plant_number,on_off,new_params="50;1;8.14;1.02"):
-    pass
+def get_params(plant_address):
+    #Requesting new parameters from tank control level
+    request = i2c_msg.write(plant_address,"p")
+    msg = i2c_msg.read(plant_address,16)
+    bus.i2c_rdwr(msg,request)
+    #Parsing to string for the mqtt payload
+    msg_list = list(msg)
+    payload = ""
+    for msg_unit in msg_list:
+        payload = payload + ";" + str(msg_unit)
+    return payload
+
+def control_plant(plant_address,on_off,new_params=""):
+    #Requesting on/off petition for tank level control
+    request = i2c_msg.write(plant_address,"o")
+    bus.i2c_rdwr(request)
+    #Sending on/off value
+    msg_on_off = i2c_msg.write(plant_address,on_off)
+    bus.i2c_rdwr(msg_on_off)
+    if new_params != "":
+        #Requesting petition to update PID parameters
+        request = i2c_msg.write(plant_address,"u")
+        bus.i2c_rdwr(request)
+        #Sending new PID values
+        msg_pid = i2c_msg.write(plant_address,new_params)
+        bus.i2c_rdwr(msg_pid)
+    
 
 
     
