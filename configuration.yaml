@@ -1,0 +1,32 @@
+mqtt:
+  broker: localhost
+  port: 1883
+  user: 
+  passwd:
+
+i2c:
+  plant1_address: 80
+  plant2_address: 81
+  pinclk: P9_17
+  pinsda: P9_18
+
+topics:
+  data:
+    plant1: plant1/data
+    plant2: plant2/data
+  params:
+    plant1: plant1/parameters
+    plant2: plant2/parameters
+  get_params:
+    plant1: plant1/get_parameters
+    plant2: plant2/get_parameters
+  on_off:
+    plant1: plant1/on_off
+    plant2: plant2/on_off
+  update:
+    plant1: plant1/update_parameters
+    plant2: plant2/update_parameters
+  
+
+
+
