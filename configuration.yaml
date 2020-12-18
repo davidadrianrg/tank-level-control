@@ -5,10 +5,11 @@ mqtt:
   passwd:
 
 i2c:
-  plant1_address: 80
-  plant2_address: 81
+  plant1_address: 10
+  plant2_address: 11
   pinclk: P9_17
   pinsda: P9_18
+  i2cbus: 1
 
 topics:
   data:

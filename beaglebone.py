@@ -1,8 +1,9 @@
 #Importing dependencies
-from smbus2 import SMBus as bus,i2c_msg
+from smbus2 import SMBus, i2c_msg
 import paho.mqtt.client as mqtt
 import yaml
 import os
+import struct
 
 #Firstly, read the configuration.yaml document
 with open("configuration.yaml", "r") as ymlfile:
@@ -11,6 +12,8 @@ with open("configuration.yaml", "r") as ymlfile:
 #Initialize de I2C pins for comunication
 os.system("config-pin " + cfg["i2c"]["pinclk"] + " i2c")
 os.system("config-pin " + cfg["i2c"]["pinsda"] + " i2c")
+#Initialize bus object
+bus = SMBus(cfg["i2c"]["i2cbus"])
 
 #Set addres for the controlled plants
 plant1_addr = cfg["i2c"]["plant1_address"]
@@ -83,40 +86,46 @@ def get_data(plant_address):
     #Requesting new data from tank control level sensors
     request = i2c_msg.write(plant_address,"d")
     msg = i2c_msg.read(plant_address,16)
-    bus.i2c_rdwr(msg,request)
+    bus.i2c_rdwr(request,msg)
+    msg_read = struct.unpack("<ffff",bytearray(list(msg)))
+
     #Parsing to string for the mqtt payload
-    msg_list = list(msg)
-    payload = ""
-    for msg_unit in msg_list:
+    payload = str(msg_read[0])
+    msg_read.pop(0)
+    for msg_unit in msg_read:
         payload = payload + ";" + str(msg_unit)
     return payload
 
 def get_params(plant_address):
-    #Requesting new parameters from tank control level
+    #Requesting parameters from tank control level sensors
     request = i2c_msg.write(plant_address,"p")
     msg = i2c_msg.read(plant_address,16)
-    bus.i2c_rdwr(msg,request)
+    on_off_state = i2c_msg.read(plant_address,2)
+    bus.i2c_rdwr(request,msg,on_off_state)
+    msg_read = struct.unpack("<ffff",bytearray(list(msg)))
+    on_off = struct.unpack("<i",bytearray(list(on_off_state)))
+
     #Parsing to string for the mqtt payload
-    msg_list = list(msg)
-    payload = ""
-    for msg_unit in msg_list:
+    payload = str(msg_read[0])
+    msg_read.pop(0)
+    for msg_unit in msg_read:
         payload = payload + ";" + str(msg_unit)
+    payload = payload + ";" + str(on_off)
     return payload
 
 def control_plant(plant_address,on_off,new_params=""):
-    #Requesting on/off petition for tank level control
+    #Requesting on/off petition for switching the plant
     request = i2c_msg.write(plant_address,"o")
-    bus.i2c_rdwr(request)
-    #Sending on/off value
     msg_on_off = i2c_msg.write(plant_address,on_off)
-    bus.i2c_rdwr(msg_on_off)
+    bus.i2c_rdwr(request,msg_on_off)
+
     if new_params != "":
         #Requesting petition to update PID parameters
         request = i2c_msg.write(plant_address,"u")
-        bus.i2c_rdwr(request)
-        #Sending new PID values
+        new_params = new_params.split(";")
         msg_pid = i2c_msg.write(plant_address,new_params)
-        bus.i2c_rdwr(msg_pid)
+        bus.i2c_rdwr(request,msg_pid)
+        
     
 
 
