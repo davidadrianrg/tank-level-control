@@ -15,18 +15,38 @@ topics:
   data:
     plant1: plant1/data
     plant2: plant2/data
+    plant3: plant3/data
+    plant4: plant4/data
+    plant5: plant5/data
+    plant6: plant6/data
   params:
     plant1: plant1/parameters
     plant2: plant2/parameters
+    plant3: plant3/parameters
+    plant4: plant4/parameters
+    plant5: plant5/parameters
+    plant6: plant6/parameters
   get_params:
     plant1: plant1/get_parameters
     plant2: plant2/get_parameters
+    plant3: plant3/get_parameters
+    plant4: plant4/get_parameters
+    plant5: plant5/get_parameters
+    plant6: plant6/get_parameters
   on_off:
     plant1: plant1/on_off
     plant2: plant2/on_off
+    plant3: plant3/on_off
+    plant4: plant4/on_off
+    plant5: plant5/on_off
+    plant6: plant6/on_off
   update:
     plant1: plant1/update_parameters
     plant2: plant2/update_parameters
+    plant3: plant3/update_parameters
+    plant4: plant4/update_parameters
+    plant5: plant5/update_parameters
+    plant6: plant6/update_parameters
   
 
 
