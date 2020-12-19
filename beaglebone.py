@@ -132,12 +132,3 @@ while True:
         client.publish(msg_plant2_topic,msg_plant2_payload)
         plant2_last_payload = msg_plant2_payload
 
-
-      
-    
-
-
-    
-    
-
-
