@@ -22,12 +22,11 @@ plant2_addr = cfg["i2c"]["plant2_address"]
 #Setting up MQTT Connection
 client = mqtt.Client("beaglebone")
 client.connect(cfg["mqtt"]["broker"],cfg["mqtt"]["port"])
-client.on_message = on_message
 
 #Storing topics into a dictionary
 topics_dict = cfg["topics"]
 
-#Subscribing and Publishing on respective topics
+#Subscribing on respective topics
 def suscriber_function(topic_type):   
     for topic in topics_dict[topic_type].values():
         client.subscribe(topic)
@@ -36,34 +35,17 @@ suscriber_function("get_params")
 suscriber_function("on_off")
 suscriber_function("update_parameters")
 
-#Starting to listen from the broker
-client.loop_start
-
 #Defining callback function
 def on_message(client, userdata, message):
 
-    if message.topic == topics_dict["data"]["plant1"]:
-        message.payload = get_data(plant1_addr)
-        client.publish(message.topic,message.payload)
-
-    if message.topic == topics_dict["data"]["plant2"]:
-        message.payload = get_data(plant2_addr)
-        client.publish(message.topic,message.payload)
-
-    if message.topic == topics_dict["params"]["plant1"]:
-        message.payload = get_params(plant1_addr)
-        client.publish(message.topic,message.payload)
-
-    if message.topic == topics_dict["params"]["plant2"]:
-        message.payload = get_params(plant2_addr)
-        client.publish(message.topic,message.payload)
-
     if message.topic == topics_dict["get_params"]["plant1"] and message.payload == "":
         message.payload = get_params(plant1_addr)
+        message.topic = topics_dict["params"]["plant1"]
         client.publish(message.topic,message.payload)
 
     if message.topic == topics_dict["get_params"]["plant2"] and message.payload == "":
         message.payload = get_params(plant2_addr)
+        message.topic = topics_dict["params"]["plant2"]
         client.publish(message.topic,message.payload)
 
     if message.topic == topics_dict["on_off"]["plant1"]:
@@ -81,7 +63,7 @@ def on_message(client, userdata, message):
     if message.topic == topics_dict["update"]["plant2"]:
         control_plant(plant2_addr,1,message.payload)
     
-#Defining internal functions for the callback
+#Defining internal functions for the callback and for request data
 def get_data(plant_address):
     #Requesting new data from tank control level sensors
     request = i2c_msg.write(plant_address,"d")
@@ -125,7 +107,33 @@ def control_plant(plant_address,on_off,new_params=""):
         new_params = new_params.split(";")
         msg_pid = i2c_msg.write(plant_address,new_params)
         bus.i2c_rdwr(request,msg_pid)
-        
+
+#Setting up the callback function to the client  
+client.on_message = on_message
+
+#Starting to listen from the broker
+client.loop_start()
+
+#Starting de loop to publish data
+plant1_last_payload = ""
+plant2_last_payload = ""
+
+while True:
+
+    msg_plant1_payload = get_data(plant1_addr)
+    if msg_plant1_payload != plant1_last_payload:
+        msg_plant1_topic = topics_dict["data"]["plant1"]
+        client.publish(msg_plant1_topic,msg_plant1_payload)
+        plant1_last_payload = msg_plant1_payload
+
+    msg_plant2_payload = get_data(plant2_addr)
+    if msg_plant2_payload != plant2_last_payload:
+        msg_plant2_topic = topics_dict["data"]["plant2"]
+        client.publish(msg_plant2_topic,msg_plant2_payload)
+        plant2_last_payload = msg_plant2_payload
+
+
+      
     
 
 
