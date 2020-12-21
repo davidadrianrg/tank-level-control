@@ -11,6 +11,13 @@ i2c:
   pinsda: P9_18
   i2cbus: 1
 
+spi:
+  plant3_ce: 0
+  plant4_ce: 1
+  spibus: 0
+  max_speed_hz: 500000
+  mode: 0
+
 topics:
   data:
     plant1: plant1/data

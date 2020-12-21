@@ -28,8 +28,8 @@ topics_dict = cfg["topics"]
 
 #Subscribing on respective topics
 def suscriber_function(topic_type):   
-    for topic in topics_dict[topic_type].values():
-        client.subscribe(topic)
+    for i in range(2):
+        client.subscribe(topics_dict[topic_type].values()[i])
 
 suscriber_function("get_params")
 suscriber_function("on_off")
