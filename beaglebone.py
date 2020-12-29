@@ -1,9 +1,12 @@
+#!/usr/bin/python3
+
 #Importing dependencies
 from smbus2 import SMBus, i2c_msg
 import paho.mqtt.client as mqtt
 import yaml
 import os
 import struct
+import time
 
 #Firstly, read the configuration.yaml document
 with open("configuration.yaml", "r") as ymlfile:
@@ -29,11 +32,13 @@ topics_dict = cfg["topics"]
 #Subscribing on respective topics
 def suscriber_function(topic_type):   
     for i in range(2):
-        client.subscribe(topics_dict[topic_type].values()[i])
+        to_subscribe = topics_dict[topic_type]["plant"+str(i+1)]
+        client.subscribe(to_subscribe)
+        print("Beaglebon has subscribed to " + to_subscribe)
 
 suscriber_function("get_params")
 suscriber_function("on_off")
-suscriber_function("update_parameters")
+suscriber_function("update")
 
 #Defining callback function
 def on_message(client, userdata, message):
@@ -49,19 +54,23 @@ def on_message(client, userdata, message):
         client.publish(message.topic,message.payload)
 
     if message.topic == topics_dict["on_off"]["plant1"]:
-        if message.payload == "0":
-            control_plant(plant1_addr,0)
-        if message.payload == "1":
-            control_plant(plant1_addr,1)
+        if int(message.payload) == 0:
+            print("Switching off plant 1")
+            control_plant(plant1_addr,False)
+        if int(message.payload) == 1:
+            print("Switching on plant 1")
+            control_plant(plant1_addr,True)
     if message.topic == topics_dict["on_off"]["plant2"]:
-        if message.payload == "0":
-            control_plant(plant2_addr,0)
-        if message.payload == "1":
-            control_plant(plant2_addr,1)
+        if int(message.payload) == 0:
+            print("Switching off plant 2")
+            control_plant(plant2_addr,False)
+        if int(message.payload) == 1:
+            print("Switching on plant 2")
+            control_plant(plant2_addr,True)
     if message.topic == topics_dict["update"]["plant1"]:
-        control_plant(plant1_addr,1,message.payload)
+        control_plant(plant1_addr,True,message.payload.decode('utf-8'))
     if message.topic == topics_dict["update"]["plant2"]:
-        control_plant(plant2_addr,1,message.payload)
+        control_plant(plant2_addr,True,message.payload.decode('utf-8'))
     
 #Defining internal functions for the callback and for request data
 def get_data(plant_address):
@@ -69,7 +78,7 @@ def get_data(plant_address):
     request = i2c_msg.write(plant_address,"d")
     msg = i2c_msg.read(plant_address,16)
     bus.i2c_rdwr(request,msg)
-    msg_read = struct.unpack("<ffff",bytearray(list(msg)))
+    msg_read = list(struct.unpack("<ffff",bytearray(list(msg))))
 
     #Parsing to string for the mqtt payload
     payload = str(msg_read[0])
@@ -84,7 +93,7 @@ def get_params(plant_address):
     msg = i2c_msg.read(plant_address,16)
     on_off_state = i2c_msg.read(plant_address,2)
     bus.i2c_rdwr(request,msg,on_off_state)
-    msg_read = struct.unpack("<ffff",bytearray(list(msg)))
+    msg_read = list(struct.unpack("<ffff",bytearray(list(msg))))
     on_off = struct.unpack("<i",bytearray(list(on_off_state)))
 
     #Parsing to string for the mqtt payload
@@ -97,16 +106,17 @@ def get_params(plant_address):
 
 def control_plant(plant_address,on_off,new_params=""):
     #Requesting on/off petition for switching the plant
-    request = i2c_msg.write(plant_address,"o")
-    msg_on_off = i2c_msg.write(plant_address,on_off)
-    bus.i2c_rdwr(request,msg_on_off)
+    request = list(bytes("o",'utf-8'))
+    msg_on_off = i2c_msg.write(plant_address,request + list(bytes(on_off)))
+    bus.i2c_rdwr(msg_on_off)
 
     if new_params != "":
         #Requesting petition to update PID parameters
-        request = i2c_msg.write(plant_address,"u")
-        new_params = new_params.split(";")
-        msg_pid = i2c_msg.write(plant_address,new_params)
-        bus.i2c_rdwr(request,msg_pid)
+        request = list(bytes("u",'utf-8'))
+        new_params = list(map(float,new_params.split(";")))
+        msg_pid = i2c_msg.write(plant_address,request + list(bytearray(struct.pack("<ffff",new_params[0],new_params[1],new_params[2],new_params[3]))))
+        bus.i2c_rdwr(msg_pid)
+        print("Updating parameters " + str(new_params))
 
 #Setting up the callback function to the client  
 client.on_message = on_message
@@ -118,6 +128,7 @@ client.loop_start()
 plant1_last_payload = ""
 plant2_last_payload = ""
 
+time.sleep(0.5)
 while True:
 
     msg_plant1_payload = get_data(plant1_addr)
@@ -125,10 +136,11 @@ while True:
         msg_plant1_topic = topics_dict["data"]["plant1"]
         client.publish(msg_plant1_topic,msg_plant1_payload)
         plant1_last_payload = msg_plant1_payload
+        time.sleep(1)        
 
     msg_plant2_payload = get_data(plant2_addr)
     if msg_plant2_payload != plant2_last_payload:
         msg_plant2_topic = topics_dict["data"]["plant2"]
         client.publish(msg_plant2_topic,msg_plant2_payload)
         plant2_last_payload = msg_plant2_payload
-
+        time.sleep(1)

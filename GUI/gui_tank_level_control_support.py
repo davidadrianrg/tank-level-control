@@ -191,18 +191,18 @@ def draw_sp(p1):
 
 def switch_plant(p1):
     plant_selected = w.TCombobox_Plant.get().split()
-    if on_off_button.get() == "ON":
-        on_off = 1
-        client.publish(topics_dict["on_off"]["plant"+plant_selected[1]],on_off)
-        on_off_button.set("OFF")
-        w.Button_on_off.configure(background="#ff0000")
-        print("Switch on plant " + plant_selected[1])
-    elif on_off_button.get() == "OFF":
+    if on_off_button.get() == "OFF":
         on_off = 0
         client.publish(topics_dict["on_off"]["plant"+plant_selected[1]],on_off)
         on_off_button.set("ON")
         w.Button_on_off.configure(background="#11d82c")
         print("Switch off plant " + plant_selected[1])
+    elif on_off_button.get() == "ON":
+        on_off = 1
+        client.publish(topics_dict["on_off"]["plant"+plant_selected[1]],on_off)
+        on_off_button.set("OFF")
+        w.Button_on_off.configure(background="#ff0000")
+        print("Switch on plant " + plant_selected[1])
     sys.stdout.flush()
 
 def update_parameters(p1):

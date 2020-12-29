@@ -1,11 +1,11 @@
 mqtt:
-  broker: 192.168.1.105
+  broker: localhost
   port: 1883
   user: 
   passwd:
 
 i2c:
-  plant1_address: 10
+  plant1_address: 4
   plant2_address: 11
   pinclk: P9_17
   pinsda: P9_18
@@ -15,7 +15,7 @@ spi:
   plant3_ce: 0
   plant4_ce: 1
   spibus: 0
-  max_speed_hz: 500000
+  max_speed_hz: 50000
   mode: 0
 
 topics:
