@@ -109,14 +109,21 @@ def control_plant(plant_address,on_off,new_params=""):
     request = list(bytes("o",'utf-8'))
     msg_on_off = i2c_msg.write(plant_address,request + list(bytes(on_off)))
     bus.i2c_rdwr(msg_on_off)
-
     if new_params != "":
-        #Requesting petition to update PID parameters
-        request = list(bytes("u",'utf-8'))
-        new_params = list(map(float,new_params.split(";")))
-        msg_pid = i2c_msg.write(plant_address,request + list(bytearray(struct.pack("<ffff",new_params[0],new_params[1],new_params[2],new_params[3]))))
-        bus.i2c_rdwr(msg_pid)
-        print("Updating parameters " + str(new_params))
+    	new_params_list = list(map(float,new_params.split(";")))
+    	if new_params_list[1] >= 0 and new_params_list[2] >= 0 and new_params_list[3] >= 0:
+                #Requesting petition to update PID parameters
+                request = list(bytes("u",'utf-8'))
+                msg_pid = i2c_msg.write(plant_address,request + list(bytearray(struct.pack("<ffff",new_params_list[0],new_params_list[1],new_params_list[2],new_params_list[3]))))
+                bus.i2c_rdwr(msg_pid)
+                print("Updating parameters " + str(new_params_list))
+    	if new_params_list[1] == -1 and new_params_list[2] == -1 and new_params_list[3] == -1:
+                #Requesting petition to update PID parameters
+                request = list(bytes("s",'utf-8'))
+                msg_sp = i2c_msg.write(plant_address,request + list(bytearray(struct.pack("<f",new_params_list[0]))))
+                bus.i2c_rdwr(msg_sp)
+                print("Updating setpoint to  " + str(new_params_list[0]))
+
 
 #Setting up the callback function to the client  
 client.on_message = on_message

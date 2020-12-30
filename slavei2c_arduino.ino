@@ -76,6 +76,14 @@ void receiveEvent(int bytes)
         Serial.print("Td: ");
         Serial.println(Td);
       }
+      if(par=='s'){
+        Serial.println("Updating setpoint:");
+        for(j=0;j<sizeof(r);j++){
+        ((byte*)&r)[j] = (byte)Wire.read();
+        }
+        Serial.print("SP: ");
+        Serial.println(r);
+      }
       if(par=='o'){
         on_off = !Wire.read();
         Serial.println(on_off);

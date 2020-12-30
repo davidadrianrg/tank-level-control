@@ -162,6 +162,9 @@ def init(top, gui, *args, **kwargs):
     w = gui
     top_level = top
     root = top
+    top_level.protocol("WM_DELETE_WINDOW", destroy_window)
+    root.mainloop()
+
 
 def change_plant(p1):
     top_level.graph.clear()
@@ -210,20 +213,25 @@ def update_parameters(p1):
     new_params = tentry_sp.get() + ";" + tentry_kp.get() + ";" + tentry_ti.get() + ";" + tentry_td.get()
     client.publish(topics_dict["update"]["plant"+plant_selected[1]],new_params)
     print("Loaded new parameters to plant " + plant_selected[1])
+    #Switching the button to ON mode
+    if on_off_button.get() == "ON":
+        on_off_button.set("OFF")
+        w.Button_on_off.configure(background="#ff0000")
     sys.stdout.flush()
 
 def update_setpoint(p1):
     plant_selected = w.TCombobox_Plant.get().split()
-    new_sp = tentry_sp.get() + ";" + "" + ";" + "" + ";" + ""
+    new_sp = tentry_sp.get() + ";" + "-1" + ";" + "-1" + ";" + "-1"
     client.publish(topics_dict["update"]["plant"+plant_selected[1]],new_sp)
     print("Loaded new setpoint: " + tentry_sp.get() + " to plant " + plant_selected[1])
+    #Switching the button to ON mode
+    if on_off_button.get() == "ON":
+        on_off_button.set("OFF")
+        w.Button_on_off.configure(background="#ff0000")
     sys.stdout.flush()
 
 def destroy_window():
     # Function which closes the window.
-    global top_level
-    top_level.destroy()
-    top_level = None
     global root
     root.quit()
     root = None

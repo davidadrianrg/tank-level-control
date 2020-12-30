@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #  -*- coding: utf-8 -*-
 #
 # Main module implementing the client view for the GUI
@@ -24,19 +24,17 @@ import gui_tank_level_control_support
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
-    global val, w, root
+    global w, root
     root = tk.Tk()
     gui_tank_level_control_support.set_Tk_var()
     top = Control_Center (root)
     gui_tank_level_control_support.init(root, top)
-    root.mainloop()
-    root.protocol("WM_DELETE_WINDOW", destroy_Control_Center())
 
 w = None
 def create_Control_Center(rt, *args, **kwargs):
     '''Starting point when module is imported by another module.
        Correct form of call: 'create_Control_Center(root, *args, **kwargs)' .'''
-    global w, w_win, root
+    global w, root
     #rt = root
     root = rt
     w = tk.Toplevel (root)
@@ -44,11 +42,6 @@ def create_Control_Center(rt, *args, **kwargs):
     top = Control_Center (w)
     gui_tank_level_control_support.init(w, top, *args, **kwargs)
     return (w, top)
-
-def destroy_Control_Center():
-    global w
-    w.destroy()
-    w = None
 
 class Control_Center:
     def __init__(self, top=None):
