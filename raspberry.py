@@ -3,6 +3,7 @@ import spidev
 import paho.mqtt.client as mqtt
 import yaml
 import struct
+import time
 
 #Firstly, read the configuration.yaml document
 with open("configuration.yaml", "r") as ymlfile:
@@ -20,7 +21,7 @@ plant4_ce = cfg["spi"]["plant4_ce"]
 spi_bus = cfg["spi"]["spibus"]
 
 #Setting up MQTT Connection
-client = mqtt.Client("beaglebone")
+client = mqtt.Client("raspberry")
 client.connect(cfg["mqtt"]["broker"],cfg["mqtt"]["port"])
 
 #Storing topics into a dictionary
@@ -28,8 +29,10 @@ topics_dict = cfg["topics"]
 
 #Subscribing on respective topics
 def suscriber_function(topic_type):   
-    for i in range(2,4):
-        client.subscribe(topics_dict[topic_type].values()[i])
+    for i in range(3,5):
+        to_subscribe = topics_dict[topic_type]["plant"+str(i+1)]
+        client.subscribe(to_subscribe)
+        print("Raspberry Pi has subscribed to " + to_subscribe)
 
 suscriber_function("get_params")
 suscriber_function("on_off")
@@ -49,19 +52,23 @@ def on_message(client, userdata, message):
         client.publish(message.topic,message.payload)
 
     if message.topic == topics_dict["on_off"]["plant3"]:
-        if message.payload == "0":
-            control_plant(spi_bus,plant3_ce,0)
-        if message.payload == "1":
-            control_plant(spi_bus,plant3_ce,1)
+        if int(message.payload) == 0:
+            print("Switching off plant 3")
+            control_plant(spi_bus,plant3_ce,False)
+        if int(message.payload) == 1:
+            print("Switching on plant 3")
+            control_plant(spi_bus,plant3_ce,True)
     if message.topic == topics_dict["on_off"]["plant4"]:
-        if message.payload == "0":
-            control_plant(spi_bus,plant4_ce,0)
-        if message.payload == "1":
-            control_plant(spi_bus,plant4_ce,1)
+        if int(message.payload) == 0:
+            print("Switching off plant 4")
+            control_plant(spi_bus,plant4_ce,False)
+        if int(message.payload) == 1:
+            print("Switching on plant 4")
+            control_plant(spi_bus,plant4_ce,True)
     if message.topic == topics_dict["update"]["plant3"]:
-        control_plant(spi_bus,plant3_ce,1,message.payload)
+        control_plant(spi_bus,plant3_ce,True,message.payload.decode('utf-8'))
     if message.topic == topics_dict["update"]["plant4"]:
-        control_plant(spi_bus,plant4_ce,1,message.payload)
+        control_plant(spi_bus,plant4_ce,True,message.payload.decode('utf-8'))
 
 #Defining internal functions for the callback and for request data
 def get_data(bus,ce):
@@ -110,14 +117,24 @@ def control_plant(bus,ce,on_off,new_params=""):
     spi.writebytes(on_off)
     
     if new_params != "":
-        #Requesting petition to update PID parameters
-        request = bytes("u", 'utf-8')
-        request_bytes = list(bytearray(struct.pack("c",request)))
-        spi.writebytes(request_bytes)
-        new_params = new_params.split(";")
-        msg_pid = list(bytearray(struct.pack("s",new_params)))
-        spi.writebytes(msg_pid)
-    
+        new_params_list = list(map(float,new_params.split(";")))
+        if new_params_list[1] >= 0 and new_params_list[2] >= 0 and new_params_list[3] >= 0:
+            #Requesting petition to update PID parameters
+            request = bytes("u", 'utf-8')
+            request_bytes = list(bytearray(struct.pack("c",request)))
+            spi.writebytes(request_bytes)
+            msg_pid = list(bytearray(struct.pack("<ffff",new_params_list[0],new_params_list[1],new_params_list[2],new_params_list[3])))
+            spi.writebytes(msg_pid)
+            print("Updating parameters " + str(new_params_list))
+        if new_params_list[1] == -1 and new_params_list[2] == -1 and new_params_list[3] == -1:
+            #Requesting petition to update setpoint
+            request = bytes("s",'utf-8')
+            request_bytes = list(bytearray(struct.pack("c",request)))
+            spi.writebytes(request_bytes)
+            msg_sp = list(bytearray(struct.pack("<f",new_params_list[0])))
+            spi.writebytes(msg_sp)
+            print("Updating setpoint to  " + str(new_params_list[0]))
+
     #Closing bus connection
     spi.close()
 
@@ -132,6 +149,7 @@ client.loop_start()
 plant3_last_payload = ""
 plant4_last_payload = ""
 
+time.sleep(0.5)
 while True:
 
     msg_plant3_payload = get_data(spi_bus,plant3_ce)
@@ -139,9 +157,11 @@ while True:
         msg_plant3_topic = topics_dict["data"]["plant3"]
         client.publish(msg_plant3_topic,msg_plant3_payload)
         plant3_last_payload = msg_plant3_payload
+        time.sleep(1)
 
     msg_plant4_payload = get_data(spi_bus,plant4_ce)
     if msg_plant4_payload != plant4_last_payload:
         msg_plant4_topic = topics_dict["data"]["plant4"]
         client.publish(msg_plant4_topic,msg_plant4_payload)
         plant4_last_payload = msg_plant4_payload
+        time.sleep(1)
