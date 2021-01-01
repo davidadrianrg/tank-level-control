@@ -125,11 +125,9 @@ void loop() {
   C3 = (2*Td/N-Ts)/(2*Td/N+Ts);
 
   //Calculating real variable: proporcional, integral and derivative
-  y = map(analogRead(A0),0,1024,0,100); //Lectura del nivel del tanque -> PV (Cambio escala: 0-5V -> 0-100%)Entrada analógica A0
+  y = map(analogRead(A0),0,1024,0,100); //Read of the tank level -> PV (Change scale: 0-5V -> 0-100%), Analog Input A0
   pv = y;             //Process value = tank level
   e = r-y;            //Error -> r=SP
-  //Serial.println(r);
-  //Serial.println(e);
   i = C1*(e+e0)+i0;     //Integral Value
   d = C2*(e-e0)+C3*d0;  //Derivativa Value
   u = kp*(e+i+d);     //Results power 0-100% equivalent to the Duty Cycle of the PWM sent to the plant -> CP
