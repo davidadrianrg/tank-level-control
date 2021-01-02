@@ -22,7 +22,7 @@ except ImportError:
 
 #Firstly, read the configuration.yaml document
 with open("../configuration.yaml", "r") as ymlfile:
-    cfg = yaml.load(ymlfile)
+    cfg = yaml.load(ymlfile,  Loader=yaml.FullLoader)
 
 
 #Setting up MQTT Connection

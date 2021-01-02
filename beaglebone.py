@@ -10,7 +10,7 @@ import time
 
 #Firstly, read the configuration.yaml document
 with open("configuration.yaml", "r") as ymlfile:
-    cfg = yaml.load(ymlfile)
+    cfg = yaml.load(ymlfile,  Loader=yaml.FullLoader)
 
 #Initialize de I2C pins for comunication
 os.system("config-pin " + cfg["i2c"]["pinclk"] + " i2c")

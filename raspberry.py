@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 #Importing dependencies
 import spidev
 import paho.mqtt.client as mqtt
@@ -7,13 +9,13 @@ import time
 
 #Firstly, read the configuration.yaml document
 with open("configuration.yaml", "r") as ymlfile:
-    cfg = yaml.load(ymlfile)
+    cfg = yaml.load(ymlfile,  Loader=yaml.FullLoader)
 
 #Remember enable the spi pins in raspi-config
 #Initialize spi_bus object
 spi = spidev.SpiDev()
-spi.max_speed_hz = cfg["spi"]["max_speed_hz"]
-spi.mode = cfg["spi"]["mode"]
+spi_max_speed_hz = cfg["spi"]["max_speed_hz"]
+spi_mode = cfg["spi"]["mode"]
 
 #Set chip enable for the controlled plants
 plant3_ce = cfg["spi"]["plant3_ce"]
@@ -36,7 +38,7 @@ def suscriber_function(topic_type):
 
 suscriber_function("get_params")
 suscriber_function("on_off")
-suscriber_function("update_parameters")
+suscriber_function("update")
 
 #Defining callback function
 def on_message(client, userdata, message):
@@ -76,10 +78,12 @@ def get_data(bus,ce):
     request = bytes("d", 'utf-8')
     request_bytes = list(bytearray(struct.pack("c",request)))
     spi.open(bus,ce)
+    spi.max_speed_hz = spi_max_speed_hz
+    spi.mode = spi_mode
     spi.writebytes(request_bytes)
     msg_read = spi.readbytes(16)
     spi.close()
-    msg_read = struct.unpack("<ffff",bytearray(msg_read))
+    msg_read = list(struct.unpack("<ffff",bytearray(msg_read)))
 
     #Parsing to string for the mqtt payload
     payload = str(msg_read[0])
@@ -93,11 +97,13 @@ def get_params(bus,ce):
     request = bytes("p", 'utf-8')
     request_bytes = list(bytearray(struct.pack("c",request)))
     spi.open(bus,ce)
+    spi.max_speed_hz = spi_max_speed_hz
+    spi.mode = spi_mode
     spi.writebytes(request_bytes)
     msg_read = spi.readbytes(16)
     on_off = spi.readbytes(2)
     spi.close()
-    msg_read = struct.unpack("<ffff",bytearray(list(msg_read)))
+    msg_read = list(struct.unpack("<ffff",bytearray(list(msg_read))))
     on_off = struct.unpack("<i",bytearray(list(on_off)))
 
     #Parsing to string for the mqtt payload
@@ -113,6 +119,8 @@ def control_plant(bus,ce,on_off,new_params=""):
     request = bytes("o", 'utf-8')
     request_bytes = list(bytearray(struct.pack("c",request)))
     spi.open(bus,ce)
+    spi.max_speed_hz = spi_max_speed_hz
+    spi.mode = spi_mode
     spi.writebytes(request_bytes)
     spi.writebytes(on_off)
     
