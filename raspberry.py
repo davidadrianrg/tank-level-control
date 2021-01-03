@@ -6,6 +6,7 @@ import paho.mqtt.client as mqtt
 import yaml
 import struct
 import time
+import sys
 
 #Firstly, read the configuration.yaml document
 with open("configuration.yaml", "r") as ymlfile:
@@ -23,15 +24,20 @@ plant4_ce = cfg["spi"]["plant4_ce"]
 spi_bus = cfg["spi"]["spibus"]
 
 #Setting up MQTT Connection
-client = mqtt.Client("raspberry")
-client.connect(cfg["mqtt"]["broker"],cfg["mqtt"]["port"])
+try:
+    client = mqtt.Client("raspberry")
+    client.connect(cfg["mqtt"]["broker"],cfg["mqtt"]["port"])
+    print("Connected to the mqtt broker")
+except:
+    print("Unable to connect with the mqtt broker")
+    sys.exit(1)
 
 #Storing topics into a dictionary
 topics_dict = cfg["topics"]
 
 #Subscribing on respective topics
-def suscriber_function(topic_type):   
-    for i in range(3,5):
+def suscriber_function(topic_type):
+    for i in range(2,4):
         to_subscribe = topics_dict[topic_type]["plant"+str(i+1)]
         client.subscribe(to_subscribe)
         print("Raspberry Pi has subscribed to " + to_subscribe)
@@ -76,11 +82,13 @@ def on_message(client, userdata, message):
 def get_data(bus,ce):
     #Requesting new data from tank control level sensors
     request = bytes("d", 'utf-8')
-    request_bytes = list(bytearray(struct.pack("c",request)))
     spi.open(bus,ce)
     spi.max_speed_hz = spi_max_speed_hz
     spi.mode = spi_mode
-    spi.writebytes(request_bytes)
+    spi.writebytes(request)
+    #This line clear the parameter from the slave register
+    msg_read = spi.readbytes(1)
+    #Start reading float data bytes
     msg_read = spi.readbytes(16)
     spi.close()
     msg_read = list(struct.unpack("<ffff",bytearray(msg_read)))
@@ -95,50 +103,49 @@ def get_data(bus,ce):
 def get_params(bus,ce):
     #Requesting parameters from tank control level sensors
     request = bytes("p", 'utf-8')
-    request_bytes = list(bytearray(struct.pack("c",request)))
     spi.open(bus,ce)
     spi.max_speed_hz = spi_max_speed_hz
     spi.mode = spi_mode
-    spi.writebytes(request_bytes)
-    msg_read = spi.readbytes(16)
-    on_off = spi.readbytes(2)
+    spi.writebytes(request)
+    #This line clear the parameter from the slave register
+    msg_read = spi.readbytes(1)
+    #Start reading float data bytes
+    msg_read = spi.readbytes(17)
     spi.close()
-    msg_read = list(struct.unpack("<ffff",bytearray(list(msg_read))))
-    on_off = struct.unpack("<i",bytearray(list(on_off)))
+    msg_read = list(struct.unpack("<ffffb",bytearray(list(msg_read))))
 
     #Parsing to string for the mqtt payload
     payload = str(msg_read[0])
     msg_read.pop(0)
     for msg_unit in msg_read:
         payload = payload + ";" + str(msg_unit)
-    payload = payload + ";" + str(on_off)
     return payload
 
 def control_plant(bus,ce,on_off,new_params=""):
-    #Requesting on/off petition for switching the plant
-    request = bytes("o", 'utf-8')
-    request_bytes = list(bytearray(struct.pack("c",request)))
+    #Opening the bus to send values
     spi.open(bus,ce)
     spi.max_speed_hz = spi_max_speed_hz
     spi.mode = spi_mode
-    spi.writebytes(request_bytes)
-    spi.writebytes(on_off)
-    
-    if new_params != "":
+    #Requesting on/off petition for switching the plant
+    if new_params == "":
+        request = bytes("o", 'utf-8')
+        spi.writebytes(request)
+        msg_on_off = list(bytearray(struct.pack("<b",on_off)))
+        spi.writebytes(msg_on_off)  
+    else:
         new_params_list = list(map(float,new_params.split(";")))
         if new_params_list[1] >= 0 and new_params_list[2] >= 0 and new_params_list[3] >= 0:
             #Requesting petition to update PID parameters
             request = bytes("u", 'utf-8')
-            request_bytes = list(bytearray(struct.pack("c",request)))
-            spi.writebytes(request_bytes)
+            spi.writebytes(request)
             msg_pid = list(bytearray(struct.pack("<ffff",new_params_list[0],new_params_list[1],new_params_list[2],new_params_list[3])))
             spi.writebytes(msg_pid)
             print("Updating parameters " + str(new_params_list))
+
         if new_params_list[1] == -1 and new_params_list[2] == -1 and new_params_list[3] == -1:
             #Requesting petition to update setpoint
             request = bytes("s",'utf-8')
-            request_bytes = list(bytearray(struct.pack("c",request)))
-            spi.writebytes(request_bytes)
+            spi.writebytes(request)
             msg_sp = list(bytearray(struct.pack("<f",new_params_list[0])))
             spi.writebytes(msg_sp)
             print("Updating setpoint to  " + str(new_params_list[0]))

@@ -7,6 +7,7 @@ import yaml
 import os
 import struct
 import time
+import sys
 
 #Firstly, read the configuration.yaml document
 with open("configuration.yaml", "r") as ymlfile:
@@ -23,8 +24,13 @@ plant1_addr = cfg["i2c"]["plant1_address"]
 plant2_addr = cfg["i2c"]["plant2_address"]
 
 #Setting up MQTT Connection
-client = mqtt.Client("beaglebone")
-client.connect(cfg["mqtt"]["broker"],cfg["mqtt"]["port"])
+try:
+    client = mqtt.Client("beaglebone")
+    client.connect(cfg["mqtt"]["broker"],cfg["mqtt"]["port"])
+    print("Connected to the mqtt broker")
+except: 
+    print("Unable to connect with the mqtt broker")
+    sys.exit(1)
 
 #Storing topics into a dictionary
 topics_dict = cfg["topics"]
@@ -106,10 +112,11 @@ def get_params(plant_address):
 
 def control_plant(plant_address,on_off,new_params=""):
     #Requesting on/off petition for switching the plant
-    request = list(bytes("o",'utf-8'))
-    msg_on_off = i2c_msg.write(plant_address,request + list(bytes(on_off)))
-    bus.i2c_rdwr(msg_on_off)
-    if new_params != "":
+    if new_params == "":
+        request = list(bytes("o",'utf-8'))
+        msg_on_off = i2c_msg.write(plant_address,request + list(bytes(on_off)))
+        bus.i2c_rdwr(msg_on_off)
+    else:
     	new_params_list = list(map(float,new_params.split(";")))
     	if new_params_list[1] >= 0 and new_params_list[2] >= 0 and new_params_list[3] >= 0:
                 #Requesting petition to update PID parameters
