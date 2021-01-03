@@ -86,6 +86,7 @@ void receiveEvent(int bytes)
       }
       if(par=='o'){
         on_off = !Wire.read();
+        Serial.print("Switch to: ");
         Serial.println(on_off);
       }
       if(par=='d'){
@@ -166,6 +167,8 @@ void loop() {
   Serial.println(cp);
   Serial.print("Time: ");
   Serial.println(t);
+  Serial.println("State: ");
+  Serial.println(on_off);
 
   //Wait untill Ts
   delay(ti*1000);
