@@ -49,15 +49,17 @@ suscriber_function("update")
 #Defining callback function
 def on_message(client, userdata, message):
 
-    if message.topic == topics_dict["get_params"]["plant3"] and message.payload == "":
-        message.payload = get_params(spi_bus,plant3_ce)
-        message.topic = topics_dict["params"]["plant3"]
-        client.publish(message.topic,message.payload)
+    if message.topic == topics_dict["get_params"]["plant3"] and message.payload == bytes("", 'utf-8'):
+        print("Requested parameters to the control center")
+        params_payload = get_params(spi_bus,plant3_ce)
+        params_topic = topics_dict["params"]["plant3"]
+        client.publish(params_topic,params_payload)
 
-    if message.topic == topics_dict["get_params"]["plant4"] and message.payload == "":
-        message.payload = get_params(spi_bus,plant4_ce)
-        message.topic = topics_dict["params"]["plant4"]
-        client.publish(message.topic,message.payload)
+    if message.topic == topics_dict["get_params"]["plant4"] and message.payload == bytes("", 'utf-8'):
+        print("Requested parameters to the control center")
+        params_payload = get_params(spi_bus,plant4_ce)
+        params_topic = topics_dict["params"]["plant4"]
+        client.publish(params_topic,params_payload)
 
     if message.topic == topics_dict["on_off"]["plant3"]:
         if int(message.payload) == 0:

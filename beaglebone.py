@@ -49,15 +49,15 @@ suscriber_function("update")
 #Defining callback function
 def on_message(client, userdata, message):
 
-    if message.topic == topics_dict["get_params"]["plant1"] and message.payload == "":
-        message.payload = get_params(plant1_addr)
-        message.topic = topics_dict["params"]["plant1"]
-        client.publish(message.topic,message.payload)
+    if message.topic == topics_dict["get_params"]["plant1"] and message.payload == bytes("", 'utf-8'):
+        params_payload = get_params(plant1_addr)
+        params_topic = topics_dict["params"]["plant1"]
+        client.publish(params_topic,params_payload)
 
-    if message.topic == topics_dict["get_params"]["plant2"] and message.payload == "":
-        message.payload = get_params(plant2_addr)
-        message.topic = topics_dict["params"]["plant2"]
-        client.publish(message.topic,message.payload)
+    if message.topic == topics_dict["get_params"]["plant2"] and message.payload == bytes("", 'utf-8'):
+        params_payload = get_params(plant2_addr)
+        params_topic = topics_dict["params"]["plant2"]
+        client.publish(params_topic,params_payload)
 
     if message.topic == topics_dict["on_off"]["plant1"]:
         if int(message.payload) == 0:
