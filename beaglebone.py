@@ -11,7 +11,7 @@ import sys
 
 #Firstly, read the configuration.yaml document
 with open("configuration.yaml", "r") as ymlfile:
-    cfg = yaml.load(ymlfile,  Loader=yaml.FullLoader)
+    cfg = yaml.load(ymlfile)
 
 #Initialize de I2C pins for comunication
 os.system("config-pin " + cfg["i2c"]["pinclk"] + " i2c")
@@ -97,10 +97,10 @@ def get_params(plant_address):
     #Requesting parameters from tank control level sensors
     request = i2c_msg.write(plant_address,"p")
     msg = i2c_msg.read(plant_address,16)
-    on_off_state = i2c_msg.read(plant_address,2)
+    on_off_state = i2c_msg.read(plant_address,1)
     bus.i2c_rdwr(request,msg,on_off_state)
     msg_read = list(struct.unpack("<ffff",bytearray(list(msg))))
-    on_off = struct.unpack("<i",bytearray(list(on_off_state)))
+    on_off = struct.unpack("<b",bytearray(list(on_off_state)))
 
     #Parsing to string for the mqtt payload
     payload = str(msg_read[0])

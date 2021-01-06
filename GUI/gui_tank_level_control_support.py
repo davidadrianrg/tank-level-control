@@ -113,10 +113,10 @@ def show_params(parameters):
     tentry_kp.set(parameters[1])
     tentry_ti.set(parameters[2])
     tentry_td.set(parameters[3])
-    if int(parameters[4]) == 0:
+    if bool(parameters[4]):
         on_off_button.set("ON")
         w.Button_on_off.configure(background="#11d82c")
-    if int(parameters[4]) == 1:
+    if bool(parameters[4]):
         on_off_button.set("OFF")
         w.Button_on_off.configure(background="#ff0000")
 
