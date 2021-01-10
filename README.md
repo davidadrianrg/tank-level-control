@@ -74,6 +74,7 @@ For the second wemos you must change the topics for the plant 6:
 #define onoffTopic "plant6/on_off"
 #define updateTopic "plant6/update_parameters"
 ```
+Flash both wemos using the Arduino IDE, make sure you have installed the ESP8266 libraries
 ## Usage
 1. Make the electronics connections for i2c and spi buses, and for the arduino/wemos to the plants
 2. Power on the arduinos and wemos
