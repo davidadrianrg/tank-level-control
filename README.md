@@ -13,13 +13,13 @@ In this project the IoT architecture consists in:
 
 ## Installation
 ### GUI
-Firstly, clone the repository to your local folder
+Firstly, clone the repository to your local folder:
 ```bash
 git clone https://github.com/davidadrianrg/tank-level-control
 ```
-After that, edit ```configuration.yaml``` file with your network and bus settings
+After that, edit ```configuration.yaml``` file with your network and bus settings.
 Make sure you have installed the python dependencies for this project.
-You can do it using ```pip3``` python package manager.
+You can do it using ```pip3``` python package manager:
 ```bash
 pip3 install matplotlib tk paho.mqtt pyyaml
 ```
@@ -31,12 +31,12 @@ You can do that using the scp command for ssh communication:
 scp ./raspberry.py pi@your_raspberry_ip:/home/pi/tank-level-control/.
 scp ./configuration.yaml pi@your_raspberry_ip:/home/pi/tank-level-control/.
 ```
-Make sure you have installed the python dependencies for this project in your Raspberry Pi
-You can do it using ```pip3``` python package manager.
+Make sure you have installed the python dependencies for this project in your Raspberry Pi.
+You can do it using ```pip3``` python package manager:
 ```bash
 pip3 install paho.mqtt pyyaml spidev
 ```
-And install the mosquitto mqtt broker if you want to have it in your Raspberry pi
+And install the mosquitto mqtt broker if you want to have it in your Raspberry Pi:
 ```bash
 sudo apt-get install mosquitto
 ```
@@ -47,14 +47,14 @@ You can do that using the scp command for ssh communication:
 scp ./beaglebone.py debian@your_beaglebone_ip:/home/debian/tank-level-control/.
 scp ./configuration.yaml debian@your_beaglebone_ip:/home/debian/tank-level-control/.
 ```
-Make sure you have installed the python dependencies for this project in your Beaglebone
-You can do it using ```pip3``` python package manager.
+Make sure you have installed the python dependencies for this project in your Beaglebone.
+You can do it using ```pip3``` python package manager:
 ```bash
 pip3 install paho.mqtt pyyaml smbus2
 ```
 ### Arduino Uno as I2C slave
 Firstly, setup the same i2c slave address in ```slavei2c_arduino.ino``` as in your ```configuration.yaml``` file.
-After that you can flash your arduino using the Arduino IDE
+After that you can flash your arduino using the Arduino IDE.
 Repeat the process for the second arduino changing the slave address.
 ### Arduino Uno as SPI slave
 This script is common for the two spi arduino slaves, you only have tu flash them using the Arduino IDE.
@@ -66,7 +66,7 @@ You need to setup your wifi and mqtt settings in ```wemosPID.ino```
 #define brokerIP "YOUR_IP_BROKER"
 #define brokerPort 1883
 ```
-For the second wemos you must change the topics for the plant 6
+For the second wemos you must change the topics for the plant 6:
 ```cpp
 #define dataTopic "plant6/data"
 #define parametersTopic "plant6/parameters"
