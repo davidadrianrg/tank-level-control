@@ -14,8 +14,9 @@ with open("configuration.yaml", "r") as ymlfile:
     cfg = yaml.load(ymlfile)
 
 #Initialize de I2C pins for comunication
-os.system("config-pin " + cfg["i2c"]["pinclk"] + " i2c")
-os.system("config-pin " + cfg["i2c"]["pinsda"] + " i2c")
+if cfg["i2c"]["pinclk"] != "P9_19" and cfg["i2c"]["pinsda"] != "P9_20":
+    os.system("sudo config-pin " + cfg["i2c"]["pinclk"] + " i2c")
+    os.system("sudo config-pin " + cfg["i2c"]["pinsda"] + " i2c")
 #Initialize bus object
 bus = SMBus(cfg["i2c"]["i2cbus"])
 

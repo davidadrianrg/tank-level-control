@@ -1,15 +1,15 @@
 mqtt:
-  broker: localhost
+  broker: 10.20.28.145
   port: 1883
   user: 
   passwd:
 
 i2c:
   plant1_address: 4
-  plant2_address: 11
-  pinclk: P9_17
-  pinsda: P9_18
-  i2cbus: 1
+  plant2_address: 5
+  pinclk: P9_19
+  pinsda: P9_20
+  i2cbus: 2
 
 spi:
   plant3_ce: 0
