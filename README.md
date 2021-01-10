@@ -57,7 +57,7 @@ Firstly, setup the same i2c slave address in ```slavei2c_arduino.ino``` as in yo
 After that you can flash your arduino using the Arduino IDE.
 Repeat the process for the second arduino changing the slave address.
 ### Arduino Uno as SPI slave
-This script is common for the two spi arduino slaves, you only have tu flash them using the Arduino IDE.
+The script ```slaveSPI_arduino.ino``` is common for the two spi arduino slaves, you only have tu flash them using the Arduino IDE.
 ### Wemos D1
 You need to setup your wifi and mqtt settings in ```wemosPID.ino```
 ```cpp
