@@ -1,86 +1,131 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include <stdio.h>
 
-#define wifiSSID "WIFISSID"
-#define wifiPass "KEYPASS"
-#define brokerIP "192.168.43.147"
+// Main Configuration: Update these lines with values suitable for your network.
+#define ssid "WIFISSID"
+#define pswd "WIFIPASS"
+#define brokerIP "10.20.28.145"
 #define brokerPort 1883
+#define clientId "WEMOSD1R1"
+#define mqtt_topic "mqtt"    // this is the [root topic]
 #define dataTopic "plant5/data"
 #define parametersTopic "plant5/parameters"
 #define getParametersTopic "plant5/get_parameters"
 #define onoffTopic "plant5/on_off"
-#define updateTopic "plant5/update_parameter"
-#define pwmPIN 3
+#define updateTopic "plant5/update_parameters"
+#define pwmPIN D3
 #define levelSensorPin A0
 
+int j;
 float t, ti, sp;
 //Global Variables
 float C1, C2, C3, i, i0, d, d0;
 float Ts, Ti, Td, N;
 float r, y, e, e0, kp, u;
 float pv, cp;
-int on_off;
+bool on_off;
 unsigned long timeNow, dataTime;
-char get_params;
+char msg[50];
 
 //Initilializing WiFi & MQTT clients
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-void setup_wifi(){
+void setup_wifi() {
   delay(10);
-  WiFi.begin(wifiSSID, wifiPass);
-  Serial.print("Connecting WiFi ");
-  while(WiFi.status() != WL_CONNECTED){
+  // Setting up the connection to a WiFi network
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, pswd);
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
+  Serial.println("");
   Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
-void callback(char* topic, byte* payload, unsigned int length){
-  //Processing the payload
-  char inmsg[length + 1];
-  for (int j = 0; j < length; j++){
-    inmsg[j] = (char)payload[j];
+//Defining callback function for the mqtt loop
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  char inmsg[length+1];
+  for (int f = 0; f < length; f++) {
+    inmsg[f] = (char)payload[f];
   }
-  if(topic == getParametersTopic){
-    inmsg[length] = '\0';
-    sscanf(inmsg, "%c", &get_params);
+  inmsg[length] = '\0';
+  Serial.print((char*) topic);
+
+  if (!strcmp(topic,getParametersTopic)) {
+    if ((char)payload[0] == '0') {
+      snprintf(msg, 50, "%f;%f;%f;%f;%i", r,kp,Ti,Td,on_off);
+      client.publish(parametersTopic, msg);
+    }
   }
-  if(topic == onoffTopic){
-    inmsg[length] = '\0';
-    sscanf(inmsg, "%i", &on_off);
+  if (!strcmp(topic,onoffTopic)) {
+    if ((char)payload[0] == '1') {
+    on_off=1;
+    }
+    if ((char)payload[0] == '0'){
+      on_off=0;
+    }
   }
-  if(topic == updateTopic){
-    float sp_received, kp_received, ti_received, td_received;
-    inmsg[length] = '\0';
-    sscanf(inmsg, "%f;%f;%f;%f", &sp_received, &kp_received, &ti_received, &td_received);
-    if(sp_received >= 0 && kp_received >= 0 && ti_received >= 0 && td_received >= 0){
-      r = sp_received;
-      kp = kp_received;
-      Ti = ti_received;
-      Td = td_received;
+  if (!strcmp(topic,updateTopic)) {
+    float kp_in,Ti_in,Td_in;
+    sscanf(inmsg, "%f;%f;%f;%f" , &r, &kp_in, &Ti_in, &Td_in);
+    if (kp_in >= 0 && Ti_in >= 0 && Td_in >= 0)
+    {
+      kp = kp_in;
+      Ti = Ti_in;
+      Td = Td_in;
+    }
+    
+    Serial.println(inmsg);
+  }
+}
+
+void reconnect() {
+  // Loop until device is connected to the broker
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    if (client.connect(clientId)) {
+      Serial.println("connected");
+      // Once connected, publish an announcement...
+      client.publish(mqtt_topic, "connected");
+      // ... and resubscribe
+      client.subscribe(getParametersTopic);
+      client.subscribe(onoffTopic);
+      client.subscribe(updateTopic);
+      Serial.print("subscribed to : ");
+      Serial.println(getParametersTopic);
+      Serial.print("subscribed to : ");
+      Serial.println(onoffTopic);
+      Serial.print("subscribed to : ");
+      Serial.println(updateTopic);
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.print(" wifi=");
+      Serial.print(WiFi.status());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
     }
   }
 }
 
 void setup() {
+  Serial.begin(115200);
+  setup_wifi();
+  client.setServer(brokerIP, 1883);
+  client.setCallback(callback);
 
   pinMode(pwmPIN, OUTPUT);
- 
-  Serial.begin(115200);
-
-  //Setting up MQTT connection
-  setup_wifi();
-  client.setServer(brokerIP, brokerPort);
-  client.setCallback(callback);
-  client.subscribe(getParametersTopic);
-  client.subscribe(onoffTopic);
-  client.subscribe(updateTopic);
-  client.loop();
-  Serial.println("Connected to the broker");
 
   //Setting up variables
   Ts = 1;
@@ -88,10 +133,7 @@ void setup() {
   Td = 1.02;
   N = 20;
   kp = 1;
-  r = 15;     //SP
-  
-  timeNow = millis(); //Start counting up
-  t=0;               //time since last value
+  r = 60;     //SP
     
   C1 = Ts/(2*Ti);
   C2 = 2*Td/(2*Td/N+Ts);
@@ -106,8 +148,14 @@ void setup() {
 }
 
 void loop() {
-  
+  //Confirm if is still connected to mqtt broker
+  if (!client.connected()) {
+    reconnect();
+  }
+
   timeNow = millis();
+  
+  client.loop();
   
   //Constants calculation
   C1 = Ts/(2*Ti);
@@ -129,7 +177,7 @@ void loop() {
   d0 = d;
 
   //Limitate cp output 0-100%
-  if(cp<0 || on_off == 0)
+  if(cp<0 || on_off==0)
   {
     cp=0;
   }
@@ -138,21 +186,17 @@ void loop() {
     cp=100;
   }
 
-  //Set the controll process to the power pump
-  //PWM Output with Duty Cycle of u/cp (Control Process).
-  analogWrite(pwmPIN,(cp/100)*255);
+  //Set the controll process value to the power pump
+  //PWM Output with Duty Cycle of u/cp (Control Process)
+  analogWrite(pwmPIN,(cp/100)*1023);
 
-  //Time Control Processs
+  //Control time process
   dataTime = millis();   //Process time
   ti = (Ts*1000-(dataTime-timeNow))/1000;
   t = dataTime/1000;
 
-  //Publish new data values
-  char* msg;
-  snprintf(msg, 50,"%f;%f;%f;%f",r,pv,cp,t);
-  client.publish(dataTopic, msg);
-
   //Print main variables
+  Serial.println("\n");
   Serial.print("SP: ");
   Serial.println(r);
   Serial.print("PV: ");
@@ -161,15 +205,21 @@ void loop() {
   Serial.println(cp);
   Serial.print("Time: ");
   Serial.println(t);
+  Serial.print("Kp: ");
+  Serial.println(kp);
+  Serial.print("Ti: ");
+  Serial.println(Ti);
+  Serial.print("Td: ");
+  Serial.println(Td);
+  Serial.print("on_off: ");
+  Serial.println(on_off);
 
-  //Publish parameters to the plant
-  if(get_params == '\0'){
-    char* msg;
-    snprintf(msg, 50,"%f;%f;%f;%f;%i",r,kp,Ti,Td,on_off);
-    client.publish(parametersTopic, msg);
-    get_params = NAN;
-  }
+  //Parsing data for the mqtt payload
+  snprintf(msg, 50, "%f;%f;%f;%f", r,pv,cp,t);
+  //Publishing plant data to the broker
+  client.publish(dataTopic, msg);
 
   //Wait untill Ts
-  delay(ti*1000);
+  delay(abs(ti*1000));
+  
 }

@@ -30,7 +30,7 @@ def vp_start_gui():
     top = Control_Center (root)
     gui_tank_level_control_support.init(root, top)
 
-w = None
+
 def create_Control_Center(rt, *args, **kwargs):
     '''Starting point when module is imported by another module.
        Correct form of call: 'create_Control_Center(root, *args, **kwargs)' .'''
@@ -135,8 +135,8 @@ class Control_Center:
         self.TCombobox_Plant.configure(textvariable=gui_tank_level_control_support.combobox)
         self.TCombobox_Plant.configure(takefocus="")
         self.TCombobox_Plant.configure(cursor="fleur")
-        self.TCombobox_Plant["values"] = ["Planta 1", "Planta 2", "Planta 3", "Planta 4", "Planta 5", "Planta 6"]
-        self.TCombobox_Plant.set("Planta 1")
+        self.TCombobox_Plant["values"] = ["Plant 1", "Plant 2", "Plant 3", "Plant 4", "Plant 5", "Plant 6"]
+        self.TCombobox_Plant.set("Plant 1")
         self.TCombobox_Plant.bind('<<ComboboxSelected>>',lambda e:gui_tank_level_control_support.change_plant(e))
 
         self.TEntry_SP = ttk.Entry(top)

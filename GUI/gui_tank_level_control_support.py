@@ -20,7 +20,16 @@ except ImportError:
     import tkinter.ttk as ttk
     py3 = True
 
-#Firstly, read the configuration.yaml document
+#Firstly, define init function to create window
+def init(top, gui, *args, **kwargs):
+    global w, top_level, root
+    w = gui
+    top_level = top
+    root = top
+    top_level.protocol("WM_DELETE_WINDOW", destroy_window)
+    root.mainloop()
+
+#Read the configuration.yaml document
 with open("../configuration.yaml", "r") as ymlfile:
     cfg = yaml.load(ymlfile,  Loader=yaml.FullLoader)
 
@@ -49,27 +58,27 @@ def on_message(client, userdata, message):
 
     if message.topic == topics_dict["data"]["plant1"]:
         plant1_data = message.payload.decode("utf-8").split(";")
-        print_data(plant1_data,"Planta 1")
+        print_data(plant1_data,"Plant 1")
 
     if message.topic == topics_dict["data"]["plant2"]:
         plant2_data = message.payload.decode("utf-8").split(";")
-        print_data(plant2_data,"Planta 2")
+        print_data(plant2_data,"Plant 2")
     
     if message.topic == topics_dict["data"]["plant3"]:
         plant3_data = message.payload.decode("utf-8").split(";")
-        print_data(plant3_data,"Planta 3")
+        print_data(plant3_data,"Plant 3")
 
     if message.topic == topics_dict["data"]["plant4"]:
         plant4_data = message.payload.decode("utf-8").split(";")
-        print_data(plant4_data,"Planta 4")
+        print_data(plant4_data,"Plant 4")
 
     if message.topic == topics_dict["data"]["plant5"]:
         plant5_data = message.payload.decode("utf-8").split(";")
-        print_data(plant5_data,"Planta 5")
+        print_data(plant5_data,"Plant 5")
 
     if message.topic == topics_dict["data"]["plant6"]:
         plant6_data = message.payload.decode("utf-8").split(";")
-        print_data(plant6_data,"Planta 6")
+        print_data(plant6_data,"Plant 6")
     
     if message.topic == topics_dict["params"]["plant1"]:
         plant1_params = message.payload.decode("utf-8").split(";")
@@ -156,15 +165,6 @@ def set_Tk_var():
     global on_off_button
     on_off_button = tk.StringVar()
     on_off_button.set('ON')
-
-def init(top, gui, *args, **kwargs):
-    global w, top_level, root
-    w = gui
-    top_level = top
-    root = top
-    top_level.protocol("WM_DELETE_WINDOW", destroy_window)
-    root.mainloop()
-
 
 def change_plant(p1):
     top_level.graph.clear()
